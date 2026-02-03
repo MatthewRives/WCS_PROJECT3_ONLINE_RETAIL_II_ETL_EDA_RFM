@@ -1,15 +1,11 @@
 # E-commerce sales Dashboard
 
-https://www.kaggle.com/datasets/thedevastator/unlock-profits-with-e-commerce-sales-data/data
-
 Welcome to the Data Warehouse and Analytics Project repository! 🚀
 This project builds a modern data warehouse with SQL Server, including ETL processes, data modeling, and analytics to generating actionable insights. Designed as a portfolio project, it highlights industry best practices in data engineering and analytics.
 
-This project is the third and last from the Data Analyst bootcamp from Wild Code School (WCS) / Simplon. The main
+This project is the third and last from the Data Analyst bootcamp from Wild Code School (WCS) / Simplon.
 
 This project follows the guided project of 'Data with Baraa' on Youtube : [SQL Data Warehouse from Scratch | Full Hands-On Data Engineering Project](https://www.youtube.com/watch?v=9GVqKuTVANE).
-
-
 
 ## How to Run This Project
 
@@ -30,23 +26,18 @@ This project follows the guided project of 'Data with Baraa' on Youtube : [SQL D
 
 This project showcases my expertise in:
 
-* **SQL Development** : Writing efficient, scalable, and complex SQL queries for data transformation and analysis.
 * **Data Architecture** : Designing and implementing a modern data warehouse using the Medallion Architecture.
 * **ETL Pipeline Development** : Building data pipelines to handle extraction, transformation, and loading.
+* **SQL Development** : Writing efficient, scalable, and complex SQL queries for data transformation and analysis.
+* **Python Development** : Writing efficient, scalable, and complex python for data pipeline, data transformation and analysis.
 * **Data Modeling** : Creating logical and physical data models (Star Schema) optimized for analytics.
 * **Data Analysis** : Translating business requirements into technical queries to deliver actionable insights.
-
----
-
-## 🏗️ About this dataset
-
-(Copy pasted from Kaggle)
-
-This dataset provides an in-depth look at the profitability of e-commerce sales. It contains data on a variety of sales channels, including Shiprocket and INCREFF, as well as financial information on related expenses and profits. The columns contain data such as SKU codes, design numbers, stock levels, product categories, sizes and colors. In addition to this we have included the MRPs across multiple stores like Ajio MRP, Amazon MRP, Amazon FBA MRP, Flipkart MRP, Limeroad MRP, Myntra MRP and PaytmMRP along with other key parameterslike amount paid by customer for the purchase, rate per piece for every individual transaction. Also we have added transactional parameters like Date of sale months category fulfilledby B2b Status Qty Currency Gross amt. This is a must-have dataset for anyone trying to uncover the profitability of e-commerce sales in today's marketplace
+* **Data Visualization** :
 
 ---
 
 
+---
 
 ## 📈 Data Flow & Schema
 
@@ -57,10 +48,7 @@ The
 ultimately landing in the Gold layer, which is structured as a star
 schema. This design places the core business metrics ( **Fact Table** ) at the center, linked to descriptive attributes ( **Dimension Tables** ).
 
-
 ### Data Flow Diagram
-
-
 
 ### Gold Layer: Star Schema
 
@@ -104,50 +92,45 @@ This project involves:
 
 (Copy pasted from sir Salkini's repository)
 
-* **[Datasets](https://www.kaggle.com/datasets/thedevastator/unlock-profits-with-e-commerce-sales-data/data):** Access to the project dataset (csv files).
-* **[SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads):** Lightweight server for hosting your SQL database.
-* **[SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/sql/ssms/download-sql-server-management-studio-ssms?view=sql-server-ver16):** GUI for managing and interacting with databases.
-* **[Git Repository](https://github.com/):** Set up a GitHub account and repository to manage, version, and collaborate on your code efficiently.
-* **[DrawIO](https://www.drawio.com/):** Design data architecture, models, flows, and diagrams.
-* PowerBi:
+* **[Datasets](https://www.kaggle.com/datasets/thedevastator/unlock-profits-with-e-commerce-sales-data/data) :** Access to the project dataset (csv files).
+* SQLite3 :
+* **[Git Repository](https://github.com/) :** Set up a GitHub account and repository to manage, version, and collaborate on your code efficiently.
+* **[DrawIO](https://www.drawio.com/) :** Design data architecture, models, flows, and diagrams.
+* PowerBi :
 
 ---
 
-📂 Source files and data origin
 
-Ajio MRP
 
-Amazon MRP
+### 🏗️ About this dataset
 
-Amazon FBA MRP
+(Copy pasted from Kaggle)
 
-Flipkart MRP
-
-Limeroad MRP
-
-Myntra MRP
-
-PaytmMR
+This dataset provides an in-depth look at the profitability of e-commerce sales. It contains data on a variety of sales channels, including Shiprocket and INCREFF, as well as financial information on related expenses and profits. The columns contain data such as SKU codes, design numbers, stock levels, product categories, sizes and colors. In addition to this we have included the MRPs across multiple stores like Ajio MRP, Amazon MRP, Amazon FBA MRP, Flipkart MRP, Limeroad MRP, Myntra MRP and PaytmMRP along with other key parameterslike amount paid by customer for the purchase, rate per piece for every individual transaction. Also we have added transactional parameters like Date of sale months category fulfilledby B2b Status Qty Currency Gross amt. This is a must-have dataset for anyone trying to uncover the profitability of e-commerce sales in today's marketplace
 
 ---
 
 ## 📂 Repository Structure
 
 ```
-sql_data_warehouse_project_with_baraa/
+wcs_project3_online_retail_ii_etl_eda_rfm/
 │
 ├── _diagram_files/                     # Draw.io files used to create diagram
 │
 ├── _img/                           	# Contains all the images files (.png) used in this project
 │
-├── datasets/                           # Raw datasets used for the project (ERP and CRM data)
+├── datasets/                           # Contains all the datasets (raw and transformed) and the sqlite database
+│   ├── raw/           			# Raw datasets used for the project
+│   ├── csv/              		# ...
+│   └── database/           		# ...
 │
 ├── docs/                               # Project documentation and architecture details
 │   ├── step_by_step_process/           # Contains each step of this guided project with markdown files
 │   ├── data_catalog.md                 # Catalog of datasets, including field descriptions and metadata
+│   ├── command_line.md                 # Reminder of useful command lines
 │   └── naming-conventions.md           # Consistent naming guidelines for tables, columns, and files
 │
-├── scripts/                            # SQL scripts for ETL and transformations
+├── src/                            	# Contains all the python scripts used for this project
 │   ├── bronze/                         # Scripts for extracting and loading raw data
 │   ├── silver/                         # Scripts for cleaning and transforming data
 │   └── gold/                           # Scripts for creating analytical models
@@ -156,6 +139,7 @@ sql_data_warehouse_project_with_baraa/
 │
 ├── .gitignore                          # Files and directories to be ignored by Git
 ├── LICENSE                             # License information for the repository
+├── requirements.txt			# License information for the repository
 └── README.md                           # Project overview and instructions
 ```
 

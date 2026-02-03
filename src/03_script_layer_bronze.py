@@ -1,9 +1,9 @@
 """
 =============================================================
-Create Database and Schemas
+Create Bronze layer and insert data from csv files
 =============================================================
 Script purpose:
-    This script creates new tables for the bronze layer (medaillon data model), in the database, and insert data from the csv files in those tables.
+    This script creates new tables for the bronze layer (medaillon data model), in the database, and insert data from the csv files in these tables.
 
 Process:
     01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
@@ -24,9 +24,9 @@ Process:
 List of functions used: 
     - fx_connect_db : connect to the database, imported from connection_to_database.py
     - fx_retrieve_csv_files : find the in csv files in ../datasets/csv
-    - fx_clean_col : transform df column name with upper + letters, numbers and _ only)
-    - fx_map_dtype : from a provided df column, return the dtype of the data
     - fx_process_csv_to_bronze : use other functions to import CSV to DF, clean cols, define dtypes, create table name, drop/create table, import data from csv to table
+        - fx_clean_col : transform df column name with upper + letters, numbers and _ only)
+        - fx_map_dtype : from a provided df column, return the dtype of the data
 
 Potential improvements: 
     - Not determined yet

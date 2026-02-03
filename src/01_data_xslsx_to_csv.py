@@ -2,7 +2,7 @@
 =============================================================
 Convert all Excel files's tabs to individual csv files
 =============================================================
-Script Purpose:
+Script purpose:
     This script extract each tabs from Excel files in designated folder and export each one of them in another folder. 
 
 Process:

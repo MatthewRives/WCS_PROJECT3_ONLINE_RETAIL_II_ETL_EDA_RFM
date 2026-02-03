@@ -2,7 +2,7 @@
 =============================================================
 Create Database and Schemas
 =============================================================
-Script Purpose:
+Script purpose:
     This script creates a new database named 'ONLINE_RETAIL_II_DATAWAREHOUSE' after checking if it already exists. 
     If the database exists, it is dropped and recreated. 
 

@@ -1,18 +1,20 @@
 # Environnement virtuel
-
+.conda/
 
 # Fichiers de logs 
 
 
 # Fichiers de cache
-__pycache__/
 **/__pycache__
+
 
 # Dossiers
 do_not_upload/
 
-# Fichiers personnels
 
+
+# Fichiers personnels
+note.py 
 
 # Fichiers ouvers
 .$*
