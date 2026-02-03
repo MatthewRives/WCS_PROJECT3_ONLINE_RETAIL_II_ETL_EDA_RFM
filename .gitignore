@@ -1,0 +1,17 @@
+# Environnement virtuel
+
+
+# Fichiers de logs 
+
+
+# Fichiers de cache
+__pycache__/
+
+# Dossiers
+do_not_upload/
+
+# Fichiers personnels
+
+
+# Fichiers ouvers
+.$*

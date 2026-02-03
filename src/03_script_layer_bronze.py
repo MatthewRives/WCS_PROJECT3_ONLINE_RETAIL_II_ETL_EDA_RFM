@@ -1,0 +1,163 @@
+"""
+=============================================================
+Create Database and Schemas
+=============================================================
+Script purpose:
+    This script creates new tables for the bronze layer (medaillon data model), in the database, and insert data from the csv files in those tables.
+
+Process:
+    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    02. Fetch the csv files located in ../datasets/csv.
+    03. For each file in the folder:
+        - Create dataframe (df)
+        - Clean df columns name 
+        - Find the type of data in each column and create a dictionnary from it
+        - Create the table name with BRONZE_{file_name}
+        - If a table with a similar name exists in the DB, drop it
+        - Concatenate SQL statement (table name, col names, col type)
+        - Create the table with the SQL statement
+        - Insert data from the file to the DB table
+        - Display how many rows have been inserted
+    04. Close connection
+    End of process
+
+List of functions used: 
+    - fx_connect_db : connect to the database, imported from connection_to_database.py
+    - fx_retrieve_csv_files : find the in csv files in ../datasets/csv
+    - fx_clean_col : transform df column name with upper + letters, numbers and _ only)
+    - fx_map_dtype : from a provided df column, return the dtype of the data
+    - fx_process_csv_to_bronze : use other functions to import CSV to DF, clean cols, define dtypes, create table name, drop/create table, import data from csv to table
+
+Potential improvements: 
+    - Not determined yet
+        
+WARNING:
+    Running this script will drop the entire 'DATAWAREHOUSE_ONLINE_RETAIL_II' database if it exists. 
+    All data in the database will be permanently deleted. 
+    Proceed with caution and ensure you have proper backups before running this script.
+"""
+
+
+import os
+import sqlite3
+import pandas as pd
+from connecting_to_database import fx_connect_db
+import re
+
+
+
+# ---
+def fx_retrieve_csv_files():
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Build absolute paths relative to the script location
+    folder_path_csv = os.path.join(script_dir, "..", "datasets", "csv")
+
+    # Normalize paths to remove '..'
+    folder_path_csv = os.path.abspath(folder_path_csv)
+
+    # Count total csv files
+    csv_files = [file for file in os.listdir(folder_path_csv) if file.endswith(".csv")]
+    return csv_files, folder_path_csv
+
+
+# ---
+def fx_clean_col(col):
+    col = col.strip().upper()
+    col = re.sub(r'\W+', '_', col)
+    return col
+
+
+# ---
+def fx_map_dtype(dtype):
+    if pd.api.types.is_integer_dtype(dtype):
+        return "INTEGER"
+    if pd.api.types.is_float_dtype(dtype):
+        return "REAL"
+    return "TEXT"
+
+
+# ---
+def fx_process_csv_to_bronze(csv_file, folder_path_csv, conn):
+    """Traite un fichier CSV : création table + insertion données"""
+    
+    file_path = os.path.join(folder_path_csv, csv_file)
+    
+    # 1. Read CSV File
+    df = pd.read_csv(file_path)
+    
+    # 2. Clean cols
+    df.columns = [fx_clean_col(col) for col in df.columns]
+    
+    # 3. Dtype definition
+    dtype_mapping = {}
+    print("Column list and type: ")
+    for col in df.columns:
+        sql_type = fx_map_dtype(df[col].dtype)
+        dtype_mapping[col] = sql_type
+        print(f"  Column: {col:20} -> Type: {sql_type:10}")
+
+    # 4. Name table
+    table_name = f"BRONZE_{os.path.splitext(csv_file)[0].upper()}"
+    
+    # 5. Drop existing table if exists
+    cursor = conn.cursor()
+    cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+    print(f"\n  Dropped existing table (if any): {table_name}")
+
+    # 6. Create sql statement
+    cols_sql = ", ".join([f"{col} {dtype_mapping[col]}" for col in df.columns])
+    sql_statement = f"CREATE TABLE {table_name} ({cols_sql})"
+    print(f"\n  SQL: {sql_statement}")
+
+    # 7. Create table
+    cursor.execute(sql_statement)
+    print(f"\n  Table created: {table_name}")
+
+    # 8. Insert data
+    df.to_sql(
+        name = table_name,
+        con = conn,
+        if_exists = "append",
+        index = False
+    )
+
+    rows_inserted = len(df)
+    print(f"\n  Inserted {rows_inserted} rows")
+
+    return table_name
+
+
+# ---
+# Main
+try:
+    conn = fx_connect_db()
+
+    csv_files, folder_path = fx_retrieve_csv_files()
+
+    total_files = len(csv_files)
+    print(f"Found {total_files} csv file(s) to process")
+    file_counter = 0
+
+    with conn:
+        for csv_file in csv_files:
+
+            file_counter += 1
+            print("-"*20) 
+            print(f"  Processing file {file_counter}/{total_files}: {csv_file}")
+            print("-"*20) 
+            
+            # CSV to DF, Clean cols, dtype definition, table name, drop/create table, import data
+            table = fx_process_csv_to_bronze(csv_file, folder_path, conn)
+            print(f"✓ Table {table} created and fulfilled with data from csv {csv_file}.")
+    
+    conn.close()
+    print("="*50)    
+    print("All files processed successfully!")
+    print("="*50)
+
+except Exception as error:
+    print(f"Error: {error}")
+    import traceback
+    traceback.print_exc()
