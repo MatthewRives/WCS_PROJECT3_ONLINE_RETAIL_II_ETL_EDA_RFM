@@ -1,0 +1,48 @@
+# Virtual environments
+.conda/
+
+
+# Files
+*.csv
+
+# Cache files
+**/__pycache__
+
+
+# Folders
+do_not_upload/
+**/database/
+**/data_exploration/
+**/csv/
+
+# Personal files
+note.py 
+constants.py
+
+
+# Databases files
+*.db
+*.sqlite
+*.sqlite3
+*.db3
+*.sdb
+*.mdb
+*.accdb
+
+
+# SQLite temporary files
+*.db-journal
+*.sqlite-journal
+*.db-wal
+*.sqlite-wal
+*.db-shm
+*.sqlite-shm
+
+
+# Open files
+.$*
+
+
+# File type
+*.csv
+*.json
