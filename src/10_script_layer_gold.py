@@ -17,7 +17,7 @@ Layer purpose:
             Naming conventions aligned with organizational KPIs.
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
     02. 
     End of process
 
@@ -68,6 +68,7 @@ WARNING:
 """
 
 # 1. Import librairies ----
+print(f"\n########### Import librairies ###########")
 import sqlite3
 import pandas as pd
 
@@ -77,16 +78,20 @@ from module_create_table import *
 
 
 # 2. Connect to database ----
+print(f"\n########### Connect to database ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
 
 # 3. Get all Silver tables and create df ----
-## Import SILVER_ONLINE_RETAIL_II table ----
+print(f"\n########### Get Silver tables ###########")
+
+## Import SILVER_SALES table ----
+print(f"\n---------- Silver sales ----------")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
-WHERE type='table' AND name LIKE 'SILVER_ONLINE_RETAIL_II'
+WHERE type='table' AND name LIKE 'SILVER_SALES'
 ORDER BY name;
 """)
 
@@ -101,7 +106,7 @@ print(df_sales.sample(5))
 
 
 ## Import SILVER_COUNTRY_METADATA table ----
-print(f"\n########### Get SILVER_COUNTRY_METADATA table ###########")
+print(f"\n---------- Silver country metadata ----------")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
@@ -118,8 +123,8 @@ df_country = pd.read_sql_query(query, conn)
 print(df_country.sample(5))
 
 
-
 ## Import SILVER_PRODUCT_MAPPING table ----
+print(f"\n---------- Silver product mapping ----------")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
@@ -136,8 +141,8 @@ df_product = pd.read_sql_query(query, conn)
 print(df_product.sample(5))
 
 
-
 ## Import SILVER_EXCHANGE_RATE table ----
+print(f"\n---------- Silver exchange rate ----------")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
@@ -154,7 +159,27 @@ df_exchange_rate = pd.read_sql_query(query, conn)
 print(df_exchange_rate.sample(5))
 
 
+## Import SILVER_RFM_MAPPING table ----
+print(f"\n---------- Silver RFM mapping ----------")
+cursor.execute("""
+SELECT name
+FROM sqlite_master
+WHERE type='table' AND name LIKE 'SILVER_RFM_MAPPING'
+ORDER BY name;
+""")
+
+table = [row[0] for row in cursor.fetchall()]
+print(f"List of studied table: {table}")
+
+query = f'SELECT * FROM "{table[0]}"'
+df_rfm_mapping = pd.read_sql_query(query, conn)
+
+print(df_rfm_mapping.sample(5))
+
+
 # 4. Create Country ID in FACT table ----
+print(f"\n########### Create Country ID ###########")
+
 ## Create Country PK in DIM table ----
 # Create a deterministic IDs (so IDs don’t change if the table is rebuilt) with a hash on the country name
 df_country['COUNTRY_ID'] = df_country['COUNTRY_RAW'].apply(lambda x: abs(hash(x)) % 10_000)
@@ -176,6 +201,8 @@ print(df_sales.sample(20))
 
 
 # 5. Create Product ID in FACT table ----
+print(f"\n########### Create Product ID ###########")
+
 ## Create product PK in DIM table ----
 # Create a deterministic IDs (so IDs don’t change if the table is rebuilt) with a hash on the country name
 df_product['PRODUCT_ID'] = df_product['STOCKCODE'] + '_' + df_product['DESCRIPTION_RAW']
@@ -196,48 +223,56 @@ df_sales = df_sales.drop(columns = ['DESCRIPTION', 'DESCRIPTION_RAW', 'PRODUCT_N
 print(df_sales.sample(20))
 
 
-# 6. Create GOLD layer tables ----
+# 6. Create Revenue column ----
+print(f"\n########### Create Revenue column ###########")
+df_sales['REVENUE'] = df_sales['QUANTITY'] * df_sales['PRICE']
+
+
+# 7. Create GOLD layer tables ----
+print(f"\n########### Create Gold layer tables ###########")
+
 ## Create GOLD_FACT_SALES ----
+print(f"\n---------- Gold fact sales ----------")
+
+
 ### Check columns ----
 print(f"GOLD FACT SALES columns: {df_sales.columns}")
-#['INVOICE', 'STOCKCODE', 'QUANTITY', 'PRICE', 'CUSTOMER_ID',
-#    'INVOICE_NUM', 'INVOICE_ALPHA', 'STOCKCODE_NUM', 'STOCKCODE_ALPHA',       
-#    'INVOICE_DATE', 'INVOICE_TIME', 'COUNTRY_ID', 'PRODUCT_ID']
+#['INVOICE', 'STOCKCODE', 'QUANTITY', 'PRICE', 'CUSTOMER_ID','INVOICE_DATE', 'INVOICE_TIME', 'INVOICE_TYPE', 'COUNTRY_ID','PRODUCT_ID', 'REVENUE']
 
-### Clean columns ----
-df_sales = df_sales.drop(columns = ['INVOICE_NUM', 'INVOICE_ALPHA','STOCKCODE_NUM','STOCKCODE_ALPHA'])
 
 ### Map dtype ----
 dtype_mapping = {
     'INVOICE': 'TEXT', 
-    'INVOICE_TYPE':'TEXT',
     'STOCKCODE': 'TEXT', 
     'QUANTITY': 'INTEGER', 
     'PRICE': 'REAL', 
     'CUSTOMER_ID': 'INTEGER', 
     'INVOICE_DATE': 'TEXT', 
     'INVOICE_TIME': 'TEXT',
+    'INVOICE_TYPE':'TEXT',
     'COUNTRY_ID':'INTEGER',
-    'PRODUCT_ID':'INTEGER'
+    'PRODUCT_ID':'INTEGER',
+    'REVENUE':'REAL'
     }
+
 
 ### Create table ----
 create_gold_fact_sales = fx_create_table("GOLD", "FACT_SALES", df_sales, dtype_mapping, conn)
 
 
 ## Create GOLD_DIM_COUNTRY table ----
+print(f"\n---------- Gold dim country ----------")
+
 ### Check columns ----
 print(f"GOLD DIM COUNTRY columns: {df_country.columns}")
-# ['COUNTRY_RAW', 'COUNTRY_STANDARDIZED', 'COUNTRY_CONFIDENCE', 'CONTINENT', 'CAPITAL', 'ISO3', 'CURRENCY', 'TIMEZONE', 'COUNTRY_ID']
+# ['COUNTRY_RAW', 'COUNTRY_STANDARDIZED', 'COUNTRY_CONFIDENCE','CONTINENT', 'CAPITAL', 'ISO3', 'CURRENCY', 'TIMEZONE', 'COUNTRY_ID']
 
 ### Clean columns ----
 df_country = df_country.drop(columns = ['COUNTRY_RAW', 'COUNTRY_CONFIDENCE'])
 
 ### Map dtype ----
 dtype_mapping = {
-    'COUNTRY_RAW':'TEXT', 
     'COUNTRY_STANDARDIZED':'TEXT', 
-    'COUNTRY_CONFIDENCE':'TEXT',
     'CONTINENT':'TEXT', 
     'CAPITAL':'TEXT',
     'ISO3':'TEXT', 
@@ -251,6 +286,8 @@ create_gold_dim_country = fx_create_table("GOLD", "DIM_COUNTRY", df_country, dty
 
 
 ## Create GOLD_DIM_PRODUCT table ----
+print(f"\n---------- Gold dim product ----------")
+
 ### Check columns ----
 print(f"GOLD DIM PRODUCT columns: {df_product.columns}")
 # ['STOCKCODE', 'DESCRIPTION_RAW', 'PRODUCT_NAME', 'PRODUCT_ID']
@@ -267,9 +304,11 @@ dtype_mapping = {
 create_gold_dim_country = fx_create_table("GOLD", "DIM_PRODUCT", df_product, dtype_mapping, conn)
 
 
-## Create GOLD_FACT_EXCHANGE_RATE table ----
+## Create GOLD_DIM_EXCHANGE_RATE table ----
+print(f"\n---------- Gold dim exchange rate ----------")
+
 ### Check columns ----
-print(f"GOLD FACT EXCHANGE RATE columns: {df_exchange_rate.columns}")
+print(f"GOLD DIM EXCHANGE RATE columns: {df_exchange_rate.columns}")
 # ['INVOICE_DATE', 'CURRENCY', 'EXCHANGE_RATE_TO_GBP']
 
 ### Map dtype ----
@@ -280,4 +319,23 @@ dtype_mapping = {
     }
 
 ### Create table ----
-create_gold_fact_sales = fx_create_table("GOLD", "FACT_EXCHANGE_RATE", df_exchange_rate, dtype_mapping, conn)
+create_gold_fact_sales = fx_create_table("GOLD", "DIM_EXCHANGE_RATE", df_exchange_rate, dtype_mapping, conn)
+
+
+## Create GOLD_DIM_RFM_MAPPING table ----
+print(f"\n---------- Gold dim RFM Mapping ----------")
+
+### Check columns ----
+print(f"GOLD DIM RFM MAPPING columns: {df_rfm_mapping.columns}")
+# ['RFM_SCORE', 'RFM_SEGMENT', 'RFM_NAME']
+
+### Map dtype ----
+dtype_mapping = {
+    'RFM_SCORE': 'INTEGER', 
+    'RFM_SEGMENT': 'TEXT', 
+    'RFM_NAME': 'TEXT'
+    }
+
+### Create table ----
+create_gold_fact_sales = fx_create_table("GOLD", "DIM_RFM_MAPPING", df_rfm_mapping, dtype_mapping, conn)
+

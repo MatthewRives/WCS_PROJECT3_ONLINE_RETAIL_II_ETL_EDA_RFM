@@ -31,13 +31,15 @@ Exemple of use:
 
 """
 
+# 1. Import librairies ----
 import re
+import sqlite3
+
 from module_connecting_to_database import *
 
 
 
-
-
+# 2. Create fx_create_table function ----
 def fx_create_table(layer_name, table_name, df, dtype_mapping, conn):
     
     layer_name = re.sub(r'\W+', '_', layer_name.upper().strip())

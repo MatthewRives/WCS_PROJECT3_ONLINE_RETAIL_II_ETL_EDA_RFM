@@ -19,18 +19,19 @@ WARNING:
     ...
 """
 
-
-
-
+# 1. Import librairies ----
 import os
+
 import sqlite3
 
+
+# 2. Define fx_connect_db fucntion ----
 def fx_connect_db():
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Build absolute paths relative to the script location
-    folder_path_database = os.path.join(script_dir, "..", "datasets", "database")
+    folder_path_database = os.path.join(script_dir, "..", "data", "database")
 
     # Normalize paths to remove '..'
     folder_path_database = os.path.abspath(folder_path_database)
@@ -42,7 +43,7 @@ def fx_connect_db():
 
     # If several db files exist, it's an error.
     if len(database_list) > 1:
-        print("To many database file. Please correct it.")
+        print("To many database file. Please correct it before restarting this script.")
         return None
 
     # If no db exist, it's an error.    

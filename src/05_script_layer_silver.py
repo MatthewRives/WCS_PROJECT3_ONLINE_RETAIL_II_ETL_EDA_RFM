@@ -19,7 +19,7 @@ Layer purpose:
 
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
     02. 
     End of process
 
@@ -35,6 +35,8 @@ WARNING:
 """
 
 # 1. Import library ----
+print(f"\n########### Import librairies ###########")
+import sqlite3
 import pandas as pd
 
 from module_create_table import *
@@ -42,11 +44,13 @@ from module_connecting_to_database import *
 
 
 # 2. Connect to database ----
+print(f"\n########### Connect to database ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
 
 # 3. Get BRONZE tables ----
+print(f"\n########### Get bronze tables ###########")
 cursor.execute("""
     SELECT name
     FROM sqlite_master
@@ -57,9 +61,11 @@ cursor.execute("""
 
 tables = [row[0] for row in cursor.fetchall()]
 print(f"Tables studied: {tables}")
+# Tables studied: ['BRONZE_ONLINE_RETAIL_II_YEAR_2009_2010', 'BRONZE_ONLINE_RETAIL_II_YEAR_2010_2011', 'BRONZE_RFM_MAPPING']   
 
 
-# 4. Create a df from each table and add it to list ----
+# 4. Create df from each table and add it to list ----
+print(f"\n########### Create df from tables ###########")
 df_list = []
 for table in tables:
     query = f'SELECT * FROM "{table}"'
@@ -67,22 +73,37 @@ for table in tables:
     df_list.append(df_query)
 
 
-# 5. Concatenate the dfs from the df list ----
-df = pd.concat(df_list, ignore_index=True) if df_list else pd.DataFrame()
+# 5. Split DF between sales and rfm ----
+
+## Concatenate Sales ----
+print(f"\n########### Concatenate sales ###########")
+sales_list = df_list[0:2] #['BRONZE_ONLINE_RETAIL_II_YEAR_2009_2010', 'BRONZE_ONLINE_RETAIL_II_YEAR_2010_2011']
+df_sales = pd.concat(sales_list, ignore_index=True) if sales_list else pd.DataFrame()
+print(df_sales)
+
+
+## Create RFM Mapping ----
+print(f"\n########### Create DF RFM ###########")
+df_rfm_mapping = df_list[2] # ['BRONZE_RFM_MAPPING']
+print(df_rfm_mapping)
 
 
 # 6. Check columns ----
-col_list = df.columns.tolist()
-print(f"Column list of df: {col_list}")
-# ['INVOICE', 'STOCKCODE', 'DESCRIPTION', 'QUANTITY', 'INVOICEDATE', 'PRICE', 'CUSTOMER_ID', 'COUNTRY']
+print(f"Column list of df sales: {df_sales.columns.tolist()}")
+# Column list of df sales: ['INVOICE', 'STOCKCODE', 'DESCRIPTION', 'QUANTITY', 'INVOICEDATE', 'PRICE', 'CUSTOMER_ID', 'COUNTRY', 'RFM_SCORE', 'RFM_SEGMENT', 'RFM_NAME']
+
+print(f"Column list of df sales: {df_rfm_mapping.columns.tolist()}")
+# Column list of df sales: ['RFM_SCORE', 'RFM_SEGMENT', 'RFM_NAME']
 
 
-# 7. Define transformation functions ----
+# 7. Define common functions ----
 ## Drop duplicates ----
 def fx_clean_duplicates(df):
     df = df.drop_duplicates()
     return df
 
+
+# 8. Define transformation functions for Sales ----
 ## Clean invoices ----
 def fx_clean_invoice(df):
     print(f"\n---------- Clean INVOICE column ----------")
@@ -170,8 +191,10 @@ def fx_mapping_return_sales(df):
     return df
 
 
-# 8. Call transformation functions ----
-clean_df = df.copy()
+# 9. Create SILVER_SALES_TABLE Table ----
+print(f"\n########### Create Silver Sales table ###########")
+## Clean df sales ----
+clean_df = df_sales.copy()
 clean_df = fx_clean_duplicates(clean_df)
 clean_df = fx_clean_invoice(clean_df)
 clean_df = fx_clean_stockcode(clean_df)
@@ -185,15 +208,13 @@ clean_df = fx_mapping_return_sales(clean_df)
 df_silver_sales = clean_df
 
 
-# 9. Create Silver Sales Table ----
-
 ## Check columns ----
 col_list = df_silver_sales.columns.tolist()
 print(f"Column list of cleaned df: {col_list}")
 # ['INVOICE', 'STOCKCODE', 'DESCRIPTION', 'QUANTITY', 'PRICE', 'CUSTOMER_ID', 'COUNTRY', 'INVOICE_DATE', 'INVOICE_TIME', 'INVOICE_TYPE']
 
 
-## Mapping dtype ----
+## Map dtype ----
 dtype_mapping = {
     'INVOICE': 'TEXT', 
     'STOCKCODE': 'TEXT', 
@@ -209,4 +230,29 @@ dtype_mapping = {
 
 
 ## Call fx_create_table ----
-create_silver_sales_table = fx_create_table("SILVER", "ONLINE_RETAIL_II", df_silver_sales, dtype_mapping, conn)
+create_silver_sales_table = fx_create_table("SILVER", "SALES", df_silver_sales, dtype_mapping, conn)
+
+
+# 10. Create SILVER_RFM_MAPPING table ----
+print(f"\n########### Create Silver RFM Mapping ###########")
+## Clean df rfm ----
+clean_df = df_rfm_mapping.copy()
+clean_df = fx_clean_duplicates(clean_df)
+df_silver_rfm_mapping = clean_df
+
+
+## Check columns ----
+col_list = df_rfm_mapping.columns.tolist()
+print(f"Column list of cleaned df: {col_list}")
+
+
+## Map dtype ----
+dtype_mapping = {
+        'RFM_SCORE': 'INTEGER', 
+        'RFM_SEGMENT': 'TEXT',
+        'RFM_NAME':'TEXT'
+        }
+
+
+## Call fx_create_table ----
+create_silver_rfm_mapping_table = fx_create_table("SILVER", "RFM_MAPPING", df_silver_rfm_mapping, dtype_mapping, conn)

@@ -7,7 +7,7 @@ Script purpose:
     If the database exists, it is dropped and recreated. 
 
 Process:
-    01. Create a 'database' folder in ../datasets/ if it doesn't exists
+    01. Create a 'database' folder in ../data/ if it doesn't exists
     02. Create the database ONLINE_RETAIL_II_DATAWAREHOUSE.db in this folder
     03. Connect to the database
     End of process
@@ -25,18 +25,21 @@ WARNING:
 """
 
 # 1. Import libraries ----
+print(f"\n########### Import librairies ###########")
 import os
+
 import sqlite3
 
 
 # 2. Creating database ----
+print(f"\n########### Creating database ###########")
 try:
     ## Define filepath ----
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Build absolute paths relative to the script location
-    folder_path_database = os.path.join(script_dir, "..", "datasets", "database")
+    folder_path_database = os.path.join(script_dir, "..", "data", "database")
 
     # Normalize paths to remove '..'
     folder_path_database = os.path.abspath(folder_path_database)
@@ -45,7 +48,7 @@ try:
     os.makedirs(folder_path_database, exist_ok=True)
 
     ## Concatenate path and file name ----
-    db_name = "ONLINE_RETAIL_II_DATAWAREHOUSE.db"
+    db_name = "DATAWAREHOUSE_ONLINE_RETAIL_II.db"
     db_path = os.path.join(folder_path_database, db_name)
 
     ## Create database
@@ -56,7 +59,7 @@ try:
     print(f"Database created/connected at: {db_path}")
     print("="*50)
 
-# 3. Error management ----
+# Error management
 except Exception as error:
     print(f"Error: {error}")
     import traceback

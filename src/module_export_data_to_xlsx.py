@@ -28,8 +28,9 @@ WARNING:
     ...
 """
 
-
+# 1. Import librairies ----
 import os
+
 import xlsxwriter
 import re 
 import pandas as pd
@@ -38,8 +39,8 @@ import matplotlib.figure as mfig
 import seaborn as sns
 
 
-
-def fx_export_data_to_excel(dict_data_to_export, file_name: str, folder_in_datasets="data_exploration"):
+# 2. Create export data to excel function ----
+def fx_export_data_to_excel(dict_data_to_export, file_name: str, folder_in_data="data_exploration"):
     try: 
         print(f"\n########### Exporting to Excel file ###########")
         print(f"\n---------- Defining path ----------")
@@ -47,7 +48,7 @@ def fx_export_data_to_excel(dict_data_to_export, file_name: str, folder_in_datas
         script_dir = os.path.dirname(os.path.abspath(__file__))
 
         print(f"\n- Building absolute path for data exploration results folder -")
-        folder_path = os.path.join(script_dir, "..", "datasets", folder_in_datasets)
+        folder_path = os.path.join(script_dir, "..", "data", folder_in_data)
         folder_path = os.path.abspath(folder_path)
 
         print(f"\n- Creating folder if needed at: {folder_path} -")

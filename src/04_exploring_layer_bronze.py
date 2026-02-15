@@ -6,7 +6,7 @@ Script purpose:
     This script explores the tables and their data from the bronze layer. Allows us to evaluate which transformation are required for the silver layer. 
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
     02. Get all tables in the DB starting with "BRONZE_" and add them to a table list
     03. For each table in the table list:
         - Create a dataframe (DF) from the table
@@ -17,7 +17,7 @@ Process:
     07. Call the generic exploration function, that will store several DF and graphs in a generic exploration dictionnary
     08. Call the specific exploration function, that will store several DF in a specific exploration dictionnary
     09. Merge the results of the two exploration in a single dictionnary
-    10. Export the exploration results to an Excel file in ../datasets/data_exploration (it should be named bronze_data_exploration.xlsx), with a sheet per DF or graph.
+    10. Export the exploration results to an Excel file in ../data/data_exploration (it should be named bronze_data_exploration.xlsx), with a sheet per DF or graph.
     End of process
 
 List of functions used: 
@@ -38,6 +38,7 @@ WARNING:
 """
 
 # 1. Import librairies ----
+print(f"\n########### Import librairies ###########")
 import sqlite3
 from pyparsing import col
 import pandas as pd
@@ -49,15 +50,17 @@ from module_export_data_to_xlsx import *
 
 
 # 2. Connect to database ----
+print(f"\n########### Connect to database ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
 
 # 3. Find all Bronze tables in database ----
+print(f"\n########### Import bronze tables ###########")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
-WHERE type='table' AND name LIKE 'BRONZE_%'
+WHERE type='table' AND name LIKE 'BRONZE_ONLINE_RETAIL%'
 ORDER BY name;
 """)
 
@@ -66,6 +69,7 @@ print(f"Tables studied: {tables}")
 
 
 # 4. Create a df from each table and add it to list ----
+print(f"\n########### Create DF ###########")
 df_list = []
 for table in tables:
     query = f'SELECT * FROM "{table}"'
@@ -74,6 +78,7 @@ for table in tables:
 
 
 # 5. Concatenate the dfs from the df list ----
+print(f"\n########### Concatenate df ###########")
 df = pd.concat(df_list, ignore_index=True) if df_list else pd.DataFrame()
 
 

@@ -12,8 +12,8 @@ Desired level of precision:
     ...
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
-    02. Get the main "SILVER_ONLINE_RETAIL_II" table
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    02. Get the main "SILVER_SALES" table
     03. ...
     End of process
 
@@ -29,6 +29,7 @@ WARNING:
 """
 
 # 1. Import librairies ----
+print(f"\n########### Import librairies ###########")
 import sqlite3
 import pandas as pd
 import numpy as np
@@ -38,30 +39,35 @@ from module_connecting_to_database import *
 from module_export_data_to_xlsx import *
 from module_create_table import *
 
+
 # 2. Connect to database ----
+print(f"\n########### Connect to database ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
 
-# 3. Get SILVER_ONLINE_RETAIL_II table ----
+# 3. Get SILVER_SALES table ----
+print(f"\n########### Get SILVER_SALES table ###########")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
-WHERE type='table' AND name LIKE 'SILVER_ONLINE_RETAIL_II'
+WHERE type='table' AND name LIKE 'SILVER_SALES'
 ORDER BY name;
 """)
 
 table_sales = [row[0] for row in cursor.fetchall()]
 print(f"Table studied: {table_sales}")
 
+
 # 4. Get list of STOCKCODE and DESCRIPTION from table to df ----
+print(f"\n########### Get Stockcode and Description ###########")
 # Must not remove duplicates because of the mode method used later
 query = f'SELECT STOCKCODE, DESCRIPTION AS DESCRIPTION_RAW FROM "{table_sales[0]}"'
 df_product = pd.read_sql_query(query, conn)
 
 
-
-# 5. Create DESCRIOTION_CLEAN column ----
+# 5. Create DESCRIPTION_CLEAN column ----
+print(f"\n########### Create DESCRIPTION_CLEAN_COLUMN librairies ###########")
 ## Create fx_clean_description function ----
 
 def fx_clean_description(df):
@@ -90,6 +96,7 @@ df_product = fx_clean_description(df_product)
 
 
 # 6. Create PRODUCT_NAME column ----
+print(f"\n########### Create PRODUCT NAME column ###########")
 ## Create fx_get_best_description function ----
 def fx_get_best_description(group):
     # Function to find the best description per stockcode        
@@ -151,10 +158,13 @@ df_product = fx_naming_product(df_product)
 
 
 # 7. Drop duplicates after use of mode() ----
+print(f"\n########### Drop duplicates ###########")
 df_product = df_product.drop(columns = ["DESCRIPTION_CLEAN"]).drop_duplicates().sort_values(by="STOCKCODE", ascending=True)
 
 
-# 8. Data exploration ----
+# 8. Explore data ----
+print(f"\n########### Data Exploration ###########")
+
 ## Count product per code ----
 df_count_product_per_code = df_product.copy()
 
@@ -186,7 +196,7 @@ df_code_count_per_product = df_code_count_per_product[df_code_count_per_product[
 
 
 # 9. [ITERATIVE] Find and remove repeating manual inputs ----
-
+print(f"\n########### Remove repeating manual inputs ###########")
 ## From data exploration, get description to keep ----
 # check the file and MULTI CODE PER PRODUCT
 
@@ -258,6 +268,7 @@ df_product.loc[df_product["PRODUCT_NAME"].isin(products_to_remove), "PRODUCT_NAM
 
 
 # 10. Clean product name (#1) ----
+print(f"\n########### Clean product name column ###########")
 ## Create fx_naming_product_clean function ----
 def fx_naming_product_clean(df):
 
@@ -290,6 +301,7 @@ df_product = df_product.drop_duplicates().sort_values(by="STOCKCODE", ascending=
 
 
 # 11. [ITERATIVE] Find and remove non-repeating manual inputs ----
+print(f"\n########### Remove non repeating manual inputs ###########")
 ## Get the length of product names ----
 df_product['NAME_LENGTH'] = df_product['PRODUCT_NAME_CLEAN_1'].str.len()
 df_product = df_product.sort_values(by='NAME_LENGTH', ascending=True)
@@ -404,6 +416,7 @@ df_product.loc[df_product["PRODUCT_NAME_CLEAN_1"].isin(products_to_remove), "PRO
 
 
 # 12. Clean product name (#2) ----
+print(f"\n########### Clean product name ###########")
 ## Create fx_naming_product_clean function ----
 def fx_naming_product_clean(df):
 
@@ -437,6 +450,7 @@ print(f"After cleaning, there is {df_product['PRODUCT_NAME'].nunique()} unique v
 
 
 # 13. Export to excel ----
+print(f"\n########### Export to Excel ###########")
 dict_data_to_export = {
     "Product and code": df_product,
     "Count Product per Code": df_count_product_per_code,
@@ -448,7 +462,8 @@ fx_export_data_to_excel(dict_data_to_export, "silver_pair_code_product", "data_e
 
 
 # 14. Create SILVER_PRODUCT_MAPPING table ----
-## Mapping dtype ----
+print(f"\n########### Create SILVER_PRODUCT_MAPPING table ###########")
+## Map dtype ----
 dtype_mapping = {
     'STOCKCODE': 'TEXT', 
     'DESCRIPTION_RAW': 'TEXT',

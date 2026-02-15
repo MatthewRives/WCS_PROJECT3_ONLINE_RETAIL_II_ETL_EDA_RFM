@@ -6,16 +6,16 @@ Script purpose:
     This script extract each tabs from Excel files in designated folder and export each one of them in another folder. 
 
 Process:
-    01. Create a CSV folder in ../datasets/ if it doesn't exist already
-    02. Find folder ../datasets/raw
-    03. For each Excel (xlsx, xls) file in ../datasets/raw : 
+    01. Create a CSV folder in ../data/ if it doesn't exist already
+    02. Find folder ../data/raw
+    03. For each Excel (xlsx, xls) file in ../data/raw : 
         - Determine how many sheet (tab) this file has
         - For each sheet :
             - Put the content in a dataframe (df)
             - Take and clean the name of the file
             - Take and clean the name of the sheet
             - Create csv file name by concatenating clean file name and cleaned sheet name 
-            - Export the df in a csv file in ../datasets/csv
+            - Export the df in a csv file in ../data/csv
             - If a file with a similar name exists, overwrite it
     End of process
 
@@ -32,31 +32,36 @@ WARNING:
 """
 
 # 1. Import libraries ----
+print(f"\n########### Import librairies ###########")
 import os
+
 import pandas as pd
 import re 
 
 
 # 2. Fetching raw excel files ----
+print(f"\n########### Fetch raw files ###########")
 ## Defining path --- 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Build absolute paths relative to the script location
-folder_path_raw = os.path.join(script_dir, "..", "datasets", "raw")
+folder_path_raw = os.path.join(script_dir, "..", "data", "raw")
 
 # Normalize paths to remove '..'
 folder_path_raw = os.path.abspath(folder_path_raw)
 
 
 # 3. Add xlsx & xls files to list ----
+print(f"\n########### Add raw files to list ###########")
 excel_files = [file for file in os.listdir(folder_path_raw) if file.endswith(".xlsx") or file.endswith(".xls")]
 total_files = len(excel_files)
 
-print(f"Found {total_files} Excel file(s) to process\n")
+print(f"Found {total_files} Excel file(s) to process")
 
 
 # 4. Defining csv folder ----
-folder_path_csv = os.path.join(script_dir, "..", "datasets", "csv")
+print(f"\n########### Defining CSV folders ###########")
+folder_path_csv = os.path.join(script_dir, "..", "data", "csv")
 folder_path_csv = os.path.abspath(folder_path_csv)
 
 # Create the csv folder if it doesn't exist
@@ -64,6 +69,7 @@ os.makedirs(folder_path_csv, exist_ok=True)
 
 
 # 5. Convert Excel sheets to CSV ----
+print(f"\n########### Convert Excel to CSV ###########")
 file_counter = 0
 
 for file in excel_files:

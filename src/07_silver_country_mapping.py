@@ -9,9 +9,9 @@ Table purpose:
     ...
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
-    02. Get the main "SILVER_ONLINE_RETAIL_II" table
-    03. Get the list of unique countries from the "SILVER_ONLINE_RETAIL_II" table
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    02. Get the main "SILVER_SALES" table
+    03. Get the list of unique countries from the "SILVER_SALES" table
     04. Standardize the country names to match API requirements (e.g., replace spaces with underscores, handle known exceptions)
     05. Get country metadata from the API (continent, capital, ISO3 code, currency, timezone) for each standardized country name
     06. Merge the country metadata back to the original country list, keeping track of the confidence level of the country name resolution (exact match, mapped, invalid)
@@ -30,6 +30,7 @@ WARNING:
 """
 
 # 1. Import librairies ----
+print(f"\n########### Import librairies ###########")
 import sqlite3
 import pandas as pd
 import re
@@ -44,24 +45,29 @@ from module_connecting_to_database import *
 from module_export_data_to_xlsx import *
 from module_create_table import *
 
+
 # 2. Connect to database ----
+print(f"\n########### Connect to database ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
 
 # 3. Get SILVER ONLINE RETAIL II table ----
+print(f"\n########### Get Silver Sales table ###########")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
-WHERE type='table' AND name LIKE 'SILVER_ONLINE_RETAIL_II'
+WHERE type='table' AND name LIKE 'SILVER_SALES'
 ORDER BY name;
 """)
 
 table = [row[0] for row in cursor.fetchall()]
 print(f"Table studied: {table}")
+# Table studied: ['SILVER_SALES']
 
 
 # 4. Create a df with distinct countries ----
+print(f"\n########### Get Distinct list of countries ###########")
 query = f'SELECT DISTINCT COUNTRY FROM "{table[0]}"'
 df_country = pd.read_sql_query(query, conn)
 
@@ -72,6 +78,7 @@ print(f"Country raw: {df_country['COUNTRY_RAW'].tolist()}")
 
 
 # 6. Standardize country names ----
+print(f"\n########### Standardize names ###########")
 ## Create fx_normalize_country function ----
 def fx_normalize_country(x: str) -> str:
     return x.replace("_", " ").title().strip()
@@ -81,6 +88,7 @@ df_country['COUNTRY_STANDARDIZED'] = df_country['COUNTRY_RAW'].apply(fx_normaliz
 
 
 # 7. Map countries ----
+print(f"\n########### Map countries ###########")
 ## Define a list of valid countries ----
 valid_countries = set(df_country["COUNTRY_STANDARDIZED"])
 print(valid_countries)
@@ -126,6 +134,7 @@ print(df_country)
 
 
 # 8. Get country metadata from API ----
+print(f"\n########### Call API ###########")
 ## Define metadata exception mapping ----
 
 exception_map_metadata = {
@@ -142,7 +151,6 @@ def fx_get_metadata(country_name: str) -> dict:
     # Returns the mapped value if the key exists, or returns the original country_name if it doesn't (the second parameter is the default).
     country_name = exception_map_metadata.get(country_name, country_name)
     
-
     url = f"https://restcountries.com/v3.1/name/{country_name}"
 
     params = {"fields": "region,capital,cca3,currencies,latlng"}
@@ -230,6 +238,7 @@ df_country = df_country.merge(
 
 
 # 9. Export to Excel ----
+print(f"\n########### Export to Excel ###########")
 dict_data_to_export = {
     "Country Mapping": df_country
     }
@@ -238,7 +247,9 @@ fx_export_data_to_excel(dict_data_to_export, "silver_country_mapping", "data_exp
 
 
 # 10. Create SILVER_COUNTRY_METADATA table ----
-## Mapping dtype ----
+print(f"\n########### Create Silver Country Metadata table ###########")
+
+## Map dtype ----
 dtype_mapping = {
     'COUNTRY_RAW': 'TEXT', 
     'COUNTRY_STANDARDIZED': 'TEXT', 
@@ -249,6 +260,7 @@ dtype_mapping = {
     'CURRENCY': 'TEXT', 
     'TIMEZONE': 'TEXT'
     }
+
 
 ## Call fx_create_table ----
 create_silver_country_mapping = fx_create_table("SILVER", "COUNTRY_METADATA", df_country, dtype_mapping, conn)

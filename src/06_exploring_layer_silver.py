@@ -6,8 +6,8 @@ Script purpose:
     This script explores the silver main table and its data from the silver layer. Allows us to evaluate which transformation are required for the gold layer. 
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
-    02. Get all tables in the DB starting with "SILVER_ONLINE_RETAIL_II" and add them to a table list
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    02. Get "SILVER_SALES" table and add them to a table list
     03. For each table in the table list:
         - Create a dataframe (DF) from the table
         - Add the DF to a DF list
@@ -17,7 +17,7 @@ Process:
     07. Call the generic exploration function, that will store several DF and graphs in a generic exploration dictionnary
     08. Call the specific exploration function, that will store several DF in a specific exploration dictionnary
     09. Merge the results of the two exploration in a single dictionnary
-    10. Export the exploration results to an Excel file in ../datasets/data_exploration (it should be named silver_data_exploration.xlsx), with a sheet per DF or graph.
+    10. Export the exploration results to an Excel file in ../data/data_exploration (it should be named silver_data_exploration.xlsx), with a sheet per DF or graph.
     End of process
 
 List of functions used: 
@@ -32,7 +32,7 @@ WARNING:
 """
 
 # 1. Import libraries ----
-
+print(f"\n########### Import librairies ###########")
 import sqlite3
 import pandas as pd
 import datetime as dt
@@ -44,35 +44,31 @@ from module_export_data_to_xlsx import *
 
 
 # 2. Connect to database ----
+print(f"\n########### Connect to database ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
 
-# 3. Get all tables in the DB ----
+# 3. Get silver sales in the DB ----
+print(f"\n########### Get Silver sales table ###########")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
-WHERE type='table' AND name LIKE 'SILVER_ONLINE_RETAIL_II'
+WHERE type='table' AND name LIKE 'SILVER_SALES'
 ORDER BY name;
 """)
 
-tables = [row[0] for row in cursor.fetchall()]
-print(f"Tables studied: {tables}")
+table_sales = [row[0] for row in cursor.fetchall()]
+print(f"Table studied: {table_sales}")
 
 
-# 4. Create a DF for each table ----
-df_list = []
-for table in tables:
-    query = f'SELECT * FROM "{table}"'
-    df_query = pd.read_sql_query(query, conn)
-    df_list.append(df_query)
+# 4. Get silver sales as df ----
+query = f'SELECT * FROM "{table_sales[0]}"'
+df = pd.read_sql_query(query, conn)
 
 
-# 5. Concatenate the DFs ----
-df = pd.concat(df_list, ignore_index=True) if df_list else pd.DataFrame()
 
-
-# 6. [ITERATIVE] Create Special data exploration functions ----
+# 5. [ITERATIVE] Create Special data exploration functions ----
 
 ## Create fx_get_unique_countries function ----
 def fx_get_unique_countries(df):
@@ -173,7 +169,7 @@ def fx_stockcode_count_per_description(df):
 
 ## Create fx_faulty_description function ----
 def fx_faulty_description(df_to_explore, df_description_count_per_stockcode, df_stockcode_count_per_description):
-    df_to_explore = df_to_explore.drop(['INVOICE_NUM', 'INVOICE_DATE', 'INVOICE_TIME'], axis = 1)
+    df_to_explore = df_to_explore.drop(['INVOICE_DATE', 'INVOICE_TIME'], axis = 1)
 
     df_description_count_per_stockcode = df_description_count_per_stockcode.drop(columns = ["PRICE", "DESCRIPTION"])
 
@@ -212,12 +208,15 @@ def fx_country_per_customer(df_to_explore):
     df_customer_multi_countries = (
         df_customer_country
         .groupby('CUSTOMER_ID')
-        .filter(lambda x: len(x) > 1))
+        .filter(lambda x: len(x) > 1)
+        .assign(CUSTOMER_ID=lambda x: x['CUSTOMER_ID'].astype(str)) # Convert to STR because of num and alpha values inside
+        .sort_values(by = "CUSTOMER_ID", ascending = True)
+    )
 
     return df_customer_multi_countries
 
 
-# 7. Regroup specific exploration functions ----
+# 6. Regroup specific exploration functions ----
 def fx_specific_exploration(df):
     print(f"\n########### Specific exploration ###########")
     df_to_explore = df.copy()
@@ -260,18 +259,18 @@ def fx_specific_exploration(df):
     return dictionnary_specific_exploration
 
 
-# 8. Call generic and specific exploration functions ----
+# 7. Call generic and specific exploration functions ----
 print(f"\n########### Call exploration functions ###########")
 dictionnary_generic_exploration = fx_generic_explo_dictionnary(df, 100)
 dictionnary_specific_exploration = fx_specific_exploration(df)
 
 
-# 9. Merge exploration dictionnaries ----
+# 8. Merge exploration dictionnaries ----
 print(f"\n########### Merge exploration dictionnaries ###########")
 dictionnary_all_exploration = dictionnary_generic_exploration | dictionnary_specific_exploration
 
 
-# 10. Export all exploration to excel ----
+# 9. Export all exploration to excel ----
 print(f"\n########### Export to Excel ###########")
 dict_data_to_export = dictionnary_all_exploration
 fx_export_data_to_excel(dict_data_to_export, "silver_data_exploration", "data_exploration")

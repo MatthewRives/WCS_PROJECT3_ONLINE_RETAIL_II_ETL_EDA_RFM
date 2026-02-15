@@ -19,32 +19,37 @@ WARNING:
     ...
 """
 
+# 1. Import librairies  ----
+# import os
 
 import io
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-# import os
 # import xlsxwriter
 import re 
 
 
+# 2. Create generic functions ----
+
+## Create fx head ----
 def fx_explo_head(df, size=100):
     print(f"\n---------- Head (first {size} rows) ----------")
     return df.head(size)
 
-
+## Create fx tail ----
 def fx_explo_tail(df, size=100):
     print(f"\n---------- Tail (last {size} rows) ----------")
     return df.tail(size)
 
-
+## Create fx sample ----
 def fx_explo_sample(df, size=100):
     print(f"\n---------- Sample (random {size} rows) ----------")
     return df.sample(size) 
 
-
+## Create fx df info ----
 def fx_explo_info(df):
     info_data = []
     for col in df.columns:
@@ -66,12 +71,12 @@ def fx_explo_info(df):
     
     return pd.concat([summary, info_df], ignore_index=True)
 
-
+## Create fx describe ----
 def fx_explo_describe(df):
     print(f"\n---------- Describe ----------")
     return df.describe(include = "all").T
 
-
+## Create fx fulfilling rate ----
 def fx_explo_fulfilling_rate(df):
     print(f"\n---------- Fulfilling rates ----------")
     df_fullfill_rate = []
@@ -83,7 +88,7 @@ def fx_explo_fulfilling_rate(df):
         })
     return pd.DataFrame(df_fullfill_rate)
 
-
+## Create fx missing rate ----
 def fx_explo_missing_rate(df):
     print(f"\n---------- Missing rates ----------")
     df_missing_rate = []
@@ -95,7 +100,7 @@ def fx_explo_missing_rate(df):
             })
     return pd.DataFrame(df_missing_rate) 
 
-
+## Create fx share of values ----
 def fx_explo_share_of_value(df):
     print(f"\n---------- Share of value ----------")
     df_share_of_value = []
@@ -112,7 +117,7 @@ def fx_explo_share_of_value(df):
             })
     return pd.DataFrame(df_share_of_value)
 
-
+## Create fx need trim ----
 def fx_explo_need_trim(df):
     print(f"\n---------- Need trim ----------")
     # Create a df with the number of values that need to be trimmed for each column
@@ -125,12 +130,12 @@ def fx_explo_need_trim(df):
         })
     return pd.DataFrame(df_col_to_trim)
 
-
+## Create fx cols to lists ----
 def fx_explo_cols_to_list(df):
     print(f"\n---------- Columns list ----------")
     return df.columns.to_list()
 
-
+## Create fx variance graph ----
 def fx_explo_variance_graph(df):
     print(f"\n---------- Variance graph ----------")
     """The features in the dataset with a skewness of 0 shows a symmetrical distribution. If the skewness is 1 or above it suggests a positively skewed (right-skewed) distribution. In a right-skewed distribution the tail extends more to the right which shows the presence of extremely high values."""
@@ -149,7 +154,7 @@ def fx_explo_variance_graph(df):
 
     return fig
 
-
+## Create fx correlation matrix graph ----
 def fx_explo_correlation_matrix_plot(df):
     print(f"\n---------- Correlation matrix ----------")
     numeric_cols = df.select_dtypes(include='number') 
@@ -165,7 +170,7 @@ def fx_explo_correlation_matrix_plot(df):
 
     return fig
 
-
+## Create fx correlation matrix series ----
 def fx_explo_correlation_matrix_series(df):
     print(f"\n---------- Correlation matrix series ----------")
     numeric_cols = df.select_dtypes(include='number')
@@ -190,7 +195,7 @@ def fx_explo_correlation_matrix_series(df):
     return df_top10_pos, df_top10_neg
 
 
-# ---
+# 3. Combine all generic explo functions ----
 def fx_generic_explo_dictionnary(df, size = 100):
     print(f"\n########### Generic exploration ###########")
     

@@ -5,7 +5,7 @@
 Script purpose:
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
     02. 
     End of process
 
@@ -44,6 +44,9 @@ WARNING:
 
 """
 # 1. Library import ----
+print(f"\n########### Import librairies ###########")
+import os
+
 import sqlite3
 import pandas as pd
 import datetime as dt
@@ -58,6 +61,7 @@ print(f"\n########### Connect to DB ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
+
 # 3. Import table Gold Fact Sales ----
 print(f"\n########### Get GOLD_FACT_SALES table ###########")
 cursor.execute("""
@@ -71,37 +75,39 @@ table = [row[0] for row in cursor.fetchall()]
 print(f"List of studied table: {table}")
 
 query = f'SELECT * FROM "{table[0]}"'
-df = pd.read_sql_query(query, conn)
+df_sales = pd.read_sql_query(query, conn)
 
-print(df.sample(5))
+print(df_sales.sample(5))
 
 
 # 4. Explore Sales data ----
 print(f"\n########### Data Exploration ###########")
 
-print(f"\ndf.info()")
+print(f"\n{df_sales.info()}")
 
-print(f"\ndf.describe().T")
+print(f"\n{df_sales.describe().T}")
 
-print(f"\nColumn list in the dataset: {df.columns}")
+print(f"\nColumn list in the dataset: {df_sales.columns}")
 # ['INVOICE', 'STOCKCODE', 'QUANTITY', 'PRICE', 'CUSTOMER_ID', 'INVOICE_DATE', 'INVOICE_TIME', 'COUNTRY_ID', 'PRODUCT_ID']
 
-print(f"\nThe number of customer in the dataset: {df["CUSTOMER_ID"].nunique()}")
+print(f"\nThe number of customer in the dataset: {df_sales["CUSTOMER_ID"].nunique()}")
 
-print(f"\nThe number of product in the dataset: {df["PRODUCT_ID"].nunique()}")
+print(f"\nThe number of product in the dataset: {df_sales["PRODUCT_ID"].nunique()}")
 
 print(f"\nNull values:")
-print(df.isna().sum())
+print(df_sales.isna().sum())
 
 
 # 5. Prepare dataset for RFM ----
+print(f"\n########### Prepare data for RFM ###########")
+
 ## Obtain max Date ----
 ### Convert the column to datetime ----
-df['INVOICE_DATE'] = pd.to_datetime(df['INVOICE_DATE'])
+df_sales['INVOICE_DATE'] = pd.to_datetime(df_sales['INVOICE_DATE'])
 
 
 ### Get max date ----
-date_max = df['INVOICE_DATE'].max()
+date_max = df_sales['INVOICE_DATE'].max()
 print(date_max)
 
 
@@ -110,30 +116,29 @@ today_date = date_max + dt.timedelta(days=1)
 print(today_date)
 
 
-## Obtain Revenue ----
-### Exclude sold quantity <= 0 ----
-df = df[df['QUANTITY'] > 0]
+## Remove non-sales ----
+### Keep quantity > 0 only ----
+df_sales = df_sales[df_sales['QUANTITY'] > 0]
 
-
-### Exclude price <= 0 ----
-df = df[df['PRICE'] > 0]
+### Keep price > 0 only ----
+df_sales = df_sales[df_sales['PRICE'] > 0]
 
 
 ### Exclude Unknown Customer ID
-print(f"Number of unique customer id before: {df['CUSTOMER_ID'].nunique()}")
-df = df[df['CUSTOMER_ID'] != 'UNKNOWN']
-print(f"Number of unique customer id after: {df['CUSTOMER_ID'].nunique()}")
+print(f"Number of unique customer id before: {df_sales['CUSTOMER_ID'].nunique()}")
 
+df_sales = df_sales[df_sales['CUSTOMER_ID'] != 'UNKNOWN']
 
-### Create Revenue column ----
-df['REVENUE'] = df['QUANTITY'] * df['PRICE']
-print(df.head())
+print(f"Number of unique customer id after: {df_sales['CUSTOMER_ID'].nunique()}")
+
+print(df_sales.head())
 
 
 # 6. Create RFM df ----
+print(f"\n########### Create RFM df ###########")
 ## Group by and aggregate ----
 # as_index = False keep the CUSTOMER_ID as a column
-df_rfm = df.groupby('CUSTOMER_ID', as_index = False).agg({
+df_rfm = df_sales.groupby('CUSTOMER_ID', as_index = False).agg({
     'INVOICE_DATE': lambda x: (today_date - x.max()).days,
     'INVOICE': lambda x: x.nunique(),
     'REVENUE': lambda x: x.sum()
@@ -143,38 +148,40 @@ df_rfm = df.groupby('CUSTOMER_ID', as_index = False).agg({
 ## Rename columns ----
 df_rfm.columns = ['CUSTOMER_ID', 'RECENCY', 'FREQUENCY', 'MONETARY']
 
-# 8. Explore RFM Data ----
 
+# 7. Explore RFM Data ----
 print(df_rfm)
 print(df_rfm.columns)
 print(df_rfm.info())
 print(df_rfm.describe(include = "all").T)
 
 
-# 9. Score each RFM feature ----
+# 8. Define RFM scores with quintile bins ----
+print(f"\n########### Define RFM rfm ###########")
 
+## Define bins for Recency ----
+print(f"\n---------- Recency bins ----------")
 # High level of recency : it was long time since purchase : bad
 # Recency: lower is better, so reverse the ranking
-
 df_rfm["RECENCY_SCORE"] = 6 - (pd.qcut(
     df_rfm["RECENCY"].rank(method='first'),
     q=5, 
     labels=False, 
     duplicates="drop") + 1) 
 
-df_rfm["RECENCY_SCORE"] = 6 - (pd.qcut(
-    df_rfm["RECENCY"], 
-    q=5, 
-    labels=False, 
-    duplicates="drop") + 1)
 
+## Define bins for Frequency ----
 # Frequency: higher is better
+print(f"\n---------- Frequency bins ----------")
 df_rfm["FREQUENCY_SCORE"] = pd.qcut(
     df_rfm["FREQUENCY"].rank(method='first'),  # This returns numeric ranks
     q=5, 
     labels=False,  # labels=False returns numeric bins (0, 1, 2, 3, 4)
     duplicates="drop") + 1  # Adding 1 gives (1, 2, 3, 4, 5)
 
+
+## Define bins for Monetary ----
+print(f"\n---------- Monetary bins ----------")
 # Monetary: higher is better
 df_rfm["MONETARY_SCORE"] = pd.qcut(
     df_rfm["MONETARY"], 
@@ -182,46 +189,87 @@ df_rfm["MONETARY_SCORE"] = pd.qcut(
     labels=False, 
     duplicates="drop") + 1
 
-print(df_rfm)
+
+## Explore data ----
+print(f"\n---------- Explore data ----------")
+print(df_rfm.head())
+print(df_rfm.info)
+
 
 # 10. Create score summary ----
+print(f"\n########### Create RFM Score summary ###########")
 
+## Summerize Recency bins ----
+print(f"\n---------- Recency summary ----------")
 summary_recency = df_rfm.groupby("RECENCY_SCORE").agg(
     min_recency=("RECENCY", "min"),
     max_recency=("RECENCY", "max"),
     count=("RECENCY", "count")
 ).reset_index().sort_values(by="RECENCY_SCORE", ascending=True)
+
 print(summary_recency)
 
+
+## Summerize Frequency bins ----
+print(f"\n---------- Frequency summary ----------")
 summary_frequency = df_rfm.groupby("FREQUENCY_SCORE").agg(
-    min_recency=("FREQUENCY", "min"),
-    max_recency=("FREQUENCY", "max"),
+    min_frequency=("FREQUENCY", "min"),
+    max_frequency=("FREQUENCY", "max"),
     count=("FREQUENCY", "count")
 ).reset_index().sort_values(by="FREQUENCY_SCORE", ascending=True)
+
 print(summary_frequency)
 
+
+## Summerize Monetary bins ----
+print(f"\n---------- Monetary summary ----------")
 summary_monetary = df_rfm.groupby("MONETARY_SCORE").agg(
-    min_recency=("MONETARY", "min"),
-    max_recency=("MONETARY", "max"),
+    min_monetary=("MONETARY", "min"),
+    max_monteray=("MONETARY", "max"),
     count=("MONETARY", "count")
 ).reset_index().sort_values(by="MONETARY_SCORE", ascending=True)
+
 print(summary_monetary)
 
 
 
+## Combine RF scoring ----
+df_rfm['RFM_SCORE'] = df_rfm[['RECENCY_SCORE', 'FREQUENCY_SCORE', 'MONETARY_SCORE']].astype(str).agg(''.join, axis=1)
 
-# 10. Combine RF scoring ----
-df_rfm["RF_SCORE"] = df_rfm["RECENCY_SCORE"].astype(str) + df_rfm["FREQUENCY_SCORE"].astype(str)
 
-# 10. Segment the customers
-seg_map = {
-    r'[1-2][1-2]' : 'hibernatig',
-    r'[1-2][3-4]' : 'at_Risk',
-    r'[1-2]5' : 'cant-loose',
-    r'3[1-2]' : 'about_to_sleep',
-    r'33' : 'need_attention',
-    r'[3-4][4-5]' : 'loyal_customers',
-    r'41' : 'promising',
-    r'51' : 'new_customers',
-    r'[4-5][2-3]' : 'potential_loyalists',
-    r'5[4-5]' : 'champions'}
+
+# 11. Export to excel ----
+print(f"\n########### Export to Excel ###########")
+dict_data_to_export = {
+    "Customer RFM score": df_rfm,
+    "Summary recency": summary_recency,
+    "Summary frequency": summary_frequency,
+    "Summary monetary": summary_monetary,
+    }
+
+fx_export_data_to_excel(dict_data_to_export, "gold_customer_rfm", "data_exploration")
+
+
+# 12. Create GOLD_DIM_CUSTOMER_RFM table ----
+print(f"\n---------- Gold DIM Customer RFM ----------")
+
+
+## Check columns ----
+print(f"Gold DIM Customer RFM columns: {df_rfm.columns}")
+# ['CUSTOMER_ID', 'RECENCY', 'FREQUENCY', 'MONETARY', 'RECENCY_SCORE', 'FREQUENCY_SCORE', 'MONETARY_SCORE', 'RFM_SCORE']
+
+
+## Map dtype ----
+dtype_mapping = {
+    'CUSTOMER_ID': 'TEXT', 
+    'RECENCY': 'TEXT', 
+    'FREQUENCY': 'TEXT',
+    'MONETARY': 'TEXT',
+    'RECENCY_SCORE':'TEXT',
+    'FREQUENCY_SCORE':'TEXT',
+    'MONETARY_SCORE':'TEXT',
+    'RFM_SCORE':'TEXT',
+    }
+
+## Create table ----
+create_gold_dim_customer_rfm = fx_create_table("GOLD", "DIM_CUSTOMER_RFM", df_rfm, dtype_mapping, conn)

@@ -15,8 +15,8 @@ Desired level of precision:
     No need of time (hour), only date is needed to get the exchange rate.
 
 Process:
-    01. Connect to the database located ../datasets/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
-    02. Get the main "SILVER_ONLINE_RETAIL_II" table
+    01. Connect to the database located ../data/database (it should be named DATAWAREHOUSE_ONLINE_RETAIL_II)
+    02. Get the main "SILVER_SALES" table
     03. ...
     End of process
 
@@ -33,6 +33,7 @@ WARNING:
 
 
 # 1. Import library ----
+print(f"\n########### Import librairies ###########")
 import sqlite3
 import pandas as pd
 import requests
@@ -47,15 +48,17 @@ from module_create_table import *
 
 
 # 2. Connect to database ----
+print(f"\n########### Connect to database ###########")
 conn = fx_connect_db()
 cursor = conn.cursor()
 
 
-# 3. Get SILVER_ONLINE_RETAIL_II table ----
+# 3. Get SILVER_SALES table ----
+print(f"\n########### Get SILVER_SALES_TABLES table ###########")
 cursor.execute("""
 SELECT name
 FROM sqlite_master
-WHERE type='table' AND name LIKE 'SILVER_ONLINE_RETAIL_II'
+WHERE type='table' AND name LIKE 'SILVER_SALES'
 ORDER BY name;
 """)
 
@@ -64,9 +67,9 @@ print(f"Table studied: {table_sales}")
 
 
 # 4. Get unique countries and invoice data as df ----
+print(f"\n########### Get unique countries ###########")
 query = f'SELECT DISTINCT COUNTRY, INVOICE_DATE FROM "{table_sales[0]}"'
 df_invoice_pair_country_date = pd.read_sql_query(query, conn)
-
 
 print(df_invoice_pair_country_date.sample(20))
 
@@ -86,6 +89,7 @@ print(f"Table studied: {table_country_metadata}")
 
 
 # 6. Get distinct country and currency ----
+print(f"\n########### Get Distinct country and currency ##########")
 query = f'SELECT DISTINCT COUNTRY_RAW, CURRENCY FROM "{table_country_metadata[0]}"'
 df_currency = pd.read_sql_query(query, conn)
 
@@ -93,7 +97,7 @@ print(df_currency.sample(20))
 
 
 # 7. Merge dfs to get pair of country and currency ----
-
+print(f"\n########### Merge DFs ###########")
 df_merged = df_invoice_pair_country_date.merge(
     df_currency, 
     left_on='COUNTRY', 
@@ -104,6 +108,7 @@ print(df_merged.sample(20))
 
 
 # 8. Clean df to keep only currency and dates ----
+print(f"\n########### Clean df ###########")
 df_exchange_rate = df_merged[['INVOICE_DATE', 'CURRENCY']].drop_duplicates().reset_index(drop=True)
 
 print(df_exchange_rate.sample(20))
@@ -112,6 +117,7 @@ print(f"\nNumber of unique currency and dates pairs: {number_of_pair}")
 
 
 # 9. Get exchange rate by currency/date pair with API ----
+print(f"\n########### Call exchange rate API ###########")
 ## Create an empty list that will get missing value ----
 missing_fx = []   # will convert to DataFrame later
 
@@ -163,6 +169,7 @@ def fx_get_rates(date, currency_to_check, base="GBP"):
 
 
 ## Call fx_get_rates for each currency/date pair ----
+print(f"\n########### Call API ###########")
 for idx, row in df_exchange_rate.iterrows():
     print(f"Pair {idx+1}/{len(df_exchange_rate)}: {row['INVOICE_DATE']}/{row['CURRENCY']}")
     df_exchange_rate.at[idx, 'EXCHANGE_RATE_TO_GBP'] = fx_get_rates(
@@ -175,11 +182,13 @@ print(df_exchange_rate.sample(20))
 
 
 # 10. Check if any exchange rate is missing ----
+print(f"\n########### Check missing librairies ###########")
 missing_fx = pd.DataFrame(missing_fx)
 print(missing_fx)
 
 
 # 11. Export to Excel ----
+print(f"\n########### Export to Excel ###########")
 dict_data_to_export = {
     "Date Exchange Rate": df_exchange_rate
     }
@@ -187,11 +196,10 @@ dict_data_to_export = {
 fx_export_data_to_excel(dict_data_to_export, "silver_pair_currency_date", "data_exploration")
 
 
-
-
 # 12. Create SILVER_EXCHANGE_RATE table in database ----
-## Mapping dtype ----
+print(f"\n########### Create SILVER EXCHANGE RATE table ###########")
 
+## Map dtype ----
 dtype_mapping = {
     'INVOICE_DATE': 'TEXT', 
     'CURRENCY': 'TEXT',
