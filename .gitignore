@@ -1,9 +1,12 @@
 # Virtual environments
 .conda/
-
+.env
 
 # Files
 *.csv
+key.py
+*.log
+
 
 # Cache files
 **/__pycache__

@@ -3,16 +3,12 @@
 ## Summary
 
 * Introduction
-
 * Project overview
 * About this dataset
 * Tools
 * Nomenclature
 * Data Flow & Schema
 * Data Architecture
-
-
-
 * Repository structure
 * How to run this project
 * License
@@ -29,6 +25,7 @@ This project builds a modern data warehouse with SQL Server, including ETL proce
 ## 📖 Project Overview
 
 This project involves:
+
 * **Data Architecture** : Designing a Modern Data Warehouse Using Medallion Architecture  **Bronze**, **Silver**, and **Gold** layers.
 * **ETL Pipeline Development** : Building data pipelines to handle extraction, transformation, and loading, from source systems into the warehouse.
 * **SQL Development** : Writing efficient, scalable, and complex SQL queries for data transformation and analysis.
@@ -37,15 +34,13 @@ This project involves:
 * **Data Analysis** : Translating business requirements into technical queries to deliver actionable insights.
 * **Data Visualization & Reporting** : Creating PowerBi-based reports and dashboards for actionable insights.
 
-
 ---
+
 ## 🏗️ About this dataset
 
 (Copy pasted from Kaggle)
 
 This dataset provides an in-depth look at the profitability of e-commerce sales. It contains data on a variety of sales channels, including Shiprocket and INCREFF, as well as financial information on related expenses and profits. The columns contain data such as SKU codes, design numbers, stock levels, product categories, sizes and colors. In addition to this we have included the MRPs across multiple stores like Ajio MRP, Amazon MRP, Amazon FBA MRP, Flipkart MRP, Limeroad MRP, Myntra MRP and PaytmMRP along with other key parameterslike amount paid by customer for the purchase, rate per piece for every individual transaction. Also we have added transactional parameters like Date of sale months category fulfilledby B2b Status Qty Currency Gross amt. This is a must-have dataset for anyone trying to uncover the profitability of e-commerce sales in today's marketplace
-
-
 
 ---
 
@@ -56,6 +51,8 @@ This dataset provides an in-depth look at the profitability of e-commerce sales.
 * **[Git Repository](https://github.com/) :** Set up a GitHub account and repository to manage, version, and collaborate on your code efficiently.
 * **[DrawIO](https://www.drawio.com/) :** Design data architecture, models, flows, and diagrams.
 * PowerBi :
+* Docker:
+* Airflow:
 
 ### Librairies:
 
@@ -71,8 +68,7 @@ The main queries required for this project are:
 7. request                              # ...
 ```
 
-For a complete list, check the file ./requirements.txt. 
-
+For a complete list, check the file ./requirements.txt.
 
 ### Nomenclature:
 
@@ -84,7 +80,6 @@ PEP 8 library structure
 
 ### Naming conventions:
 
-
 For more information, check ./docs/naming_conventions.md
 
 ### Recommanded VSCode extensions:
@@ -95,16 +90,13 @@ For more information, check ./docs/naming_conventions.md
 
 ![1770985191504](image/README/1770985191504.png)
 
-
-
 ---
 
-## 📈 Data Flow 
+## 📈 Data Flow
 
 (img_data_flow)
 
 The data flows from raw files through the Bronze and Silver layers, ultimately landing in the Gold layer, which is structured as a star schema. This design places the core business metrics ( **Fact Table** ) at the center, linked to descriptive attributes ( **Dimension Tables** ).
-
 
 ## 🏗️ Data Architecture
 
@@ -116,10 +108,15 @@ The data architecture for this project follows **Medallion Architecture** (**Bro
 2. **Silver Layer** : This layer includes data cleansing, standardization, and normalization processes to prepare data for analysis.
 3. **Gold Layer** : Houses business-ready data modeled into a star schema required for reporting and analytics.
 
-
 ## Data model : Star Schema
 
 (img)
+
+Automation:
+
+SQLite only works ith SequentialExecutor (run tasks one by one, no parallelism).
+
+For paralellism, Air's LocalExecutor requires a proper database like PostgreSQL.
 
 ---
 
@@ -134,15 +131,31 @@ The data architecture for this project follows **Medallion Architecture** (**Bro
 ## 📂 Repository Structure
 
 ```
-wcs_project3_online_retail_ii_etl_eda_rfm/
+WCS_PROJECT3_ENV/
+
+WCS_PROJECT3_ONLINE_RETAIL_II_ETL_EDA_RFM/
 │
-├── datasets/                           # Contains all the data (raw and transformed) and the sqlite database
+├── airflow/
+│   ├── dags/  
+│   ├── logs/  
+│   └── plugins/ 
+│
+├── dashboard/				# PowerBi file for data visualization
+│
+├── data/                           # Contains all the data (raw and transformed) and the sqlite database
+│   ├── business_inputs/
+│   │	└── rfm/
+│   │	│	└── RFM_SCORING.xlsx
 │   ├── csv/                            # Datasets are converted from raw to csv files in this folder
-│   ├── data_exploration/               # Excel files created with python script to facilitate data exploration
+│   ├── data_exploration/               # Excel files create by scripts to facilitate data exploration
 │   ├── database/                       # Sqlite3 database
-│   └── raw/                            # Raw datasets used for the project, directly downloaded from Kaggle
+│   └── raw/                            # Raw datasets used for the project
 │
 ├── diagram_files/                      # Draw.io files used to create diagram
+│
+├── docker/  
+│   ├── docker-compose.yml
+│   └── Dockerfile
 │
 ├── docs/                               # Project documentation and architecture details
 │   ├── step_by_step_process/           # Contains each step of this guided project with markdown files
@@ -150,9 +163,46 @@ wcs_project3_online_retail_ii_etl_eda_rfm/
 │   ├── command_line.md                 # Reminder of useful command lines
 │   └── naming-conventions.md           # Consistent naming guidelines for tables, columns, and files
 │
-├── images/                           	# Contains all the images files (.png) used in this project
+├── .env				# Hidden environement files, for Airflow
+│
+├── images/                           	# Contains all the images used in this project
 │
 ├── src/                            	# Contains all the python scripts used for this project
+│   ├── utils/
+│   │	├── __init__.py
+│   │	├── db.py
+│   │	├── connecting_to_database.py
+│   │	├── create_table.py
+│   │	├── data_exploration.py
+│   │	├── export_data_to_xlsx.py
+│   │	└── watermark.py
+│   │
+│   ├── ingestion/  
+│   │	├── __init__.py
+│   │	├── data_xlsx_to_csv.py
+│   │	└── creating_database.py
+│   │
+│   ├── bronze/  
+│   │	├── __init__.py
+│   │	└── script_layer_bronze.py
+│   │
+│   ├── silver/  
+│   │	├── __init__.py
+│   │	├── script_layer_silver.py
+│   │	├── silver_country_mapping.py
+│   │	├── silver_exchange_rate_historic.py
+│   │	└── silver_product_mapping.py
+│   │
+│   ├── gold/  
+│   │	├── __init__.py
+│   │	├── script_layer_gold.py
+│   │	├── script_rfm_scoring.py
+│   │	└── script_cltv.py
+│   │
+│   ├── __init__.py
+│   ├── exploring_layer_bronze.py
+│   ├── exploring_layer_silver.py
+│   └── exploring_layer_gold.py
 │
 ├── tests/                              # Test scripts and quality files
 │
@@ -160,8 +210,8 @@ wcs_project3_online_retail_ii_etl_eda_rfm/
 ├── LICENSE                             # License information for the repository
 ├── requirements.txt                    # List of all required libraires for this project
 └── README.md                           # The present project overview and instructions
-```
 
+```
 
 ---
 
